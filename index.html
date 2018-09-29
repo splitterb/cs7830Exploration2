@@ -1,0 +1,172 @@
+<!DOCTYPE html5>
+<html>
+<header>
+
+
+    <script src="https://www.gstatic.com/firebasejs/5.5.2/firebase.js"></script>
+
+    <!-- Add additional services that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/5.5.2/firebase-database.js"></script>
+
+    <script>
+        // Initialize Firebase
+        var config = {
+            apiKey: "AIzaSyBHmpe8dV_Jz3fu4VdJPr_zYUvoCSrUN4o",
+            authDomain: "cs7830-exploration2.firebaseapp.com",
+            databaseURL: "https://cs7830-exploration2.firebaseio.com",
+            projectId: "cs7830-exploration2",
+            storageBucket: "cs7830-exploration2.appspot.com",
+            messagingSenderId: "726597685669"
+        };
+        firebase.initializeApp(config);
+
+    </script>
+
+
+
+</header>
+
+<body>
+
+    <p>To sign-in to general leadership, click the below button!</p>
+    <p><b>Note: in order to use this program, you will need to "allow" the page to know your location.</b></p>
+
+    <p><b>Other Note: this page will not continue tracking you after you sign in. It will only grab your current location one time and that's it. If you're tech savvy and want to see the code feel free to ask Brandon to look at it!</b></p>
+
+
+    <div>
+        Full Name: <input type="text" id="fullName"></br>
+        Code: <input type="text" id="code">
+    </div>
+
+    </br>
+
+    <button onclick="getLocation()">Sign-In to GL</button>
+
+    <p id="signIn"></p>
+
+    <div>
+        Date of Sign-Ins: <input type="text" id="signInDate">
+    </div>
+    <button onclick="viewSignIn()">View Sign-ins</button>
+
+    <script>
+        var x = document.getElementById("signIn");
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                x.innerHTML = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        function showPosition(position) {
+            if (withinRadius(position.coords.latitude, position.coords.longitude, 38.946269, -92.326923, 5)) {
+                x.innerHTML = "You Successfully Signed In!!!! </br></br>Your Coordinates Are:</br></br>Latitude: " + position.coords.latitude + "<br>Longitude: " + position.coords.longitude;
+
+                var fullName = document.getElementById('fullName').value;
+
+                var code = document.getElementById('code').value;
+
+                //call function to write user data
+                signInToMeeting(fullName, code);
+            } else {
+                x.innerHTML = "You are too far away to sign-in to the meeting.";
+            }
+        }
+
+        function showError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    x.innerHTML = "User denied the request for Geolocation."
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    x.innerHTML = "Location information is unavailable."
+                    break;
+                case error.TIMEOUT:
+                    x.innerHTML = "The request to get user location timed out."
+                    break;
+                case error.UNKNOWN_ERROR:
+                    x.innerHTML = "An unknown error occurred."
+                    break;
+            }
+        }
+
+        /**
+         * is One Point within Another
+         * @param point {Object} {latitude: Number, longitude: Number}
+         * @param interest {Object} {latitude: Number, longitude: Number}
+         * @param kms {Number}
+         * @returns {boolean}
+         */
+        function withinRadius(pointLatitude, pointLongitude, interestLatitude, interestLongitude, kms) {
+            'use strict';
+            let R = 6371;
+            let deg2rad = (n) => {
+                return (n * (Math.PI / 180))
+            };
+
+            let dLat = deg2rad(interestLatitude - pointLatitude);
+            let dLon = deg2rad(interestLongitude - pointLongitude);
+
+            let a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(pointLatitude)) * Math.cos(deg2rad(interestLatitude)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            let c = 2 * Math.asin(Math.sqrt(a));
+            let d = R * c;
+            return (d <= kms);
+        }
+
+    </script>
+
+    <script>
+        function signInToMeeting(name, code) {
+            var d = new Date();
+            var date = d.getMonth() + 1 + "-" + d.getDate();
+
+            //specify path to take for storing data
+            var ref = firebase.database().ref('/' + date);
+
+            var signInTime = d.getHours() + ":" + d.getMinutes();
+
+            var obj = {
+                name: name,
+                code: code,
+                signInTime: signInTime
+            }
+
+            ref.push(obj);
+        }
+
+        function viewSignIn() {
+            var date = document.getElementById('signInDate').value;
+
+            //specify path to take for storing data
+            var ref = firebase.database().ref('/' + date);
+
+            ref.once('value', function(snapshot) {
+                snapshot.forEach(function(childSnapshot) {
+                    var childKey = childSnapshot.key;
+                    var childData = childSnapshot.val();
+                    
+                    console.log(childData);
+                    
+                    var elem = document.createElement("LI");
+                
+                    var nametext = document.createTextNode(childData.name);
+                    
+                    elem.appendChild(nametext);
+
+                    document.getElementById("listOfNames").appendChild(elem);
+                });
+            });
+        }
+
+    </script>
+
+    <ol id="listOfNames"></ol>
+
+    <script src="index.js"></script>
+</body>
+
+</html>
